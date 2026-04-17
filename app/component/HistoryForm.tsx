@@ -279,3 +279,152 @@ function LogDetailsContent({ log }: { log: Log }) {
     </BlockStack >
   );
 }
+
+export function Recent({ logs, openRow, setOpenRow, handleRestore, isLoading, onNext, onPrev, hasNext, hasPrev, isDbCreated, onCreateDb }: LogsTableProps) {
+
+  const resourceName = {
+    singular: 'log',
+    plural: 'logs',
+  };
+
+  const { selectedResources, allResourcesSelected, handleSelectionChange } =
+    useIndexResourceState(logs as any[]);
+
+  if (isLoading) {
+    return (
+      <LegacyCard sectioned>
+        <div className="flex flex-col items-center justify-center py-12">
+          <Spinner size="large" />
+          <div className="mt-4">
+            <Text as="p" variant="bodyMd" tone="subdued">Loading Recent activities...</Text>
+          </div>
+        </div>
+      </LegacyCard>
+    );
+  }
+
+  if (!isDbCreated) {
+    return (
+      <LegacyCard sectioned>
+        <EmptyState
+          heading="Database Required"
+          action={{
+            content: 'Create Database',
+            onAction: onCreateDb,
+          }}
+          image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+        >
+          <p>A database is required to track your history and enable restore functionality. Please create one to continue.</p>
+        </EmptyState>
+      </LegacyCard>
+    );
+  }
+
+  if (!logs || logs.length === 0) {
+    return (
+      <LegacyCard sectioned>
+        <EmptyState
+          heading="No activity yet"
+          image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+        >
+          <p>Your bulk operation history and restore points will appear here once you perform some actions.</p>
+        </EmptyState>
+      </LegacyCard>
+    );
+  }
+
+  const rowMarkup = logs.map(
+    (log, index) => (
+      <IndexTable.Row
+        id={log.id}
+        key={log.id}
+        selected={selectedResources.includes(log.id)}
+        position={index}
+      >
+
+        <IndexTable.Cell>
+          <InlineStack gap="300" align="start" blockAlign="center">
+            {/* The Action: Strong and clear */}
+            <Text as="span" variant="bodyMd" fontWeight="bold">
+              {log.operation}
+            </Text>
+
+            {/* The Object: Styled as a Badge for better visual separation */}
+            <Badge tone="info" progress="complete">
+              {log.objectType}
+            </Badge>
+          </InlineStack>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Button
+            variant="plain"
+            onClick={() => setOpenRow(index)}
+            icon={ViewIcon}
+          >
+            View Details
+          </Button>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Button
+            onClick={() => handleRestore(log)}
+            disabled={!log.restore}
+            icon={RotateLeftIcon}
+            variant="primary"
+          >
+            Undo
+          </Button>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <BlockStack gap="050" align="end">
+            <Text as="span" variant="bodySm" alignment="end">
+              {new Date(log.time).toLocaleDateString()}
+            </Text>
+            <Text as="span" variant="bodyXs" tone="subdued" alignment="end">
+              {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </BlockStack>
+        </IndexTable.Cell>
+      </IndexTable.Row>
+    ),
+  );
+
+  const currentLog = openRow !== null ? logs[openRow] : null;
+  return (
+    <LegacyCard>
+      <IndexTable
+        resourceName={resourceName}
+        itemCount={logs.length}
+        selectedItemsCount={
+          allResourcesSelected ? 'All' : selectedResources.length
+        }
+        onSelectionChange={handleSelectionChange}
+        headings={[
+          // { title: 'User' },
+          { title: 'Operation' },
+          { title: 'Details' },
+          { title: 'Action' },
+          { title: 'Timestamp', alignment: 'end' },
+        ]}
+        selectable={false}
+      >
+        {rowMarkup}
+      </IndexTable>
+
+
+      {/* Details Modal */}
+      {currentLog && (
+        <Modal
+          open={openRow !== null}
+          onClose={() => setOpenRow(null)}
+          title={`Operation Details - Total [${currentLog.value.length}]`}
+          size="large"
+        >
+          <Modal.Section>
+            <LogDetailsContent log={currentLog} />
+          </Modal.Section>
+        </Modal>
+      )}
+    </LegacyCard>
+  );
+}
+
