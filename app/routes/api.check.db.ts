@@ -9,7 +9,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
     const cursor = url.searchParams.get("cursor");
     const direction = url.searchParams.get("direction") || "next"; // "next" or "prev"
-    const limit = 10;
+    const limit = parseInt(url.searchParams.get("limit") || "10", 10);
 
     // Check if definition exists
     const definitionQuery = `

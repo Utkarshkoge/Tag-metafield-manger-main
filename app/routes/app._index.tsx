@@ -1,5 +1,8 @@
 import { useNavigate, useFetcher } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
+import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
+import { LogsTable, Recent, type Log } from "app/component/HistoryForm";
 import {
   Page,
   Layout,
@@ -12,6 +15,8 @@ import {
   Button,
   Box,
   Modal,
+  InlineStack,
+  ProgressBar,
 } from "@shopify/polaris";
 import {
   DiscountIcon,
@@ -19,10 +24,233 @@ import {
   DatabaseIcon,
   QuestionCircleIcon,
   ClockIcon,
+  AlertTriangleIcon,
 } from "@shopify/polaris-icons";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await authenticate.admin(request);
+  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+};
+
+interface ModalState {
+  isOpen?: boolean;
+  title?: string;
+  message?: ReactNode;
+  logToRestore?: Log | null;
+}
+
+interface PageInfo {
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const fetcher = useFetcher<any>();
+  const [openRow, setOpenRow] = useState<number | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [restoreTotal, setRestoreTotal] = useState(0);
+  const [restoreCompleted, setRestoreCompleted] = useState(0);
+  const [globalId, setGlobalId] = useState<string | null>(null);
+  const [restore, setRestore] = useState(true);
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [iscreateDB, setIscreateDB] = useState(true);
+  const [pageInfo, setPageInfo] = useState<PageInfo>({
+    hasNextPage: false,
+    hasPreviousPage: false,
+    startCursor: null,
+    endCursor: null,
+  });
+
+  const [modalState, setModalState] = useState<ModalState>({
+    isOpen: false,
+    title: "",
+    message: "",
+    logToRestore: null,
+  });
+
+  //  Run fetch only when restore is triggered manually
+  function createDatabase() {
+    fetcher.submit(
+      {}, // no body needed
+      {
+        method: "post",
+        action: "/api/metaCreate/db",
+      }
+    );
+  }
+
+  const handleCreateDatabaseClick = () => {
+    setModalState({
+      isOpen: true,
+      title: "Create Database",
+      message: (
+        <span>
+          Creating a metaobject named{" "}
+          <span className="font-bold">"Tag Metafield App Database"</span> to
+          store your app activity history. Would you like to continue?
+        </span>
+      ),
+      logToRestore: null, // Not a restore action
+    });
+  };
+
+  //  Run fetch only when restore is triggered manually
+  useEffect(() => {
+    if (!restore) return;
+
+    const run = async () => {
+      try {
+        // 1️⃣ Always call timeout API first
+        await fetch("/api/timeout/db", { method: "POST" });
+
+        // 2️⃣ Call check API only after timeout succeeds (limit to 4 for home page)
+        const url = "/api/check/db?limit=4";
+        fetcher.load(url);
+      } catch (error) {
+        console.error("Restore flow failed:", error);
+      }
+    };
+
+    run();
+  }, [restore]);
+
+  useEffect(() => {
+    const runRestore = async () => {
+      const shouldRunRestore = restoreCompleted >= restoreTotal && isRestoring;
+      if (!shouldRunRestore) return;
+
+      const formData = new FormData();
+      formData.append("rowId", globalId || "");
+
+      const response = await fetch("/api/update-restore/db", {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await response.json();
+      if (res.success) {
+        setRestore(true); // triggers fetcher.load
+      } else {
+        console.error("Restore failed:", res.errors);
+      }
+    };
+
+    runRestore();
+  }, [restoreCompleted, restoreTotal]);
+
+  // Handle fetch results safely
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    if (!fetcher?.data?.successdb) {
+      setIscreateDB(false);
+    } else {
+      setIscreateDB(true);
+    }
+    setRestore(false);
+    setLogs(fetcher?.data?.database || []);
+    if (fetcher?.data?.pageInfo) {
+      setPageInfo(fetcher.data.pageInfo);
+    }
+    setIsLoading(false);
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+    setIsSubmitting(false);
+  }, [fetcher.state, fetcher.data]);
+
+  //  User clicks restore
+  const handleRestoreClick = (log: Log) => {
+    let message = "Are you sure you want to restore the removed data?";
+    if (log.operation === "Tags-removed") {
+      message = "Are you sure you want to restore the removed tags?";
+    } else if (log.operation === "Tags-Added") {
+      message = "Are you sure you want to remove the added tags?";
+    } else if (log.operation === "Metafield-removed") {
+      message = "Are you sure you want to restore the removed metafields?";
+    } else if (log.operation === "Metafield-updated") {
+      message = "Are you sure you want to revert the metafield updates?";
+    }
+
+    setModalState({
+      isOpen: true,
+      title: "Confirm Restore",
+      message,
+      logToRestore: log,
+    });
+    setGlobalId(log.id);
+  };
+
+  //  Confirm restore or create DB
+  const handleConfirmAction = async () => {
+    setIsSubmitting(true);
+    const { title } = modalState;
+
+    if (title === "Create Database") {
+      createDatabase();
+      return;
+    }
+
+    const log = modalState.logToRestore;
+    if (!log) {
+      setIsSubmitting(false);
+      setModalState({ ...modalState, isOpen: false });
+      return;
+    }
+
+    const operation = log.operation;
+    const objectType = log.objectType;
+    const rows =
+      operation === "Tags-removed"
+        ? log.value.filter((v) => v.removedTags?.length > 0)
+        : log.value || [];
+
+    if (!rows.length) {
+      setIsSubmitting(false);
+      return;
+    }
+
+    setRestoreCompleted(0);
+    setRestoreTotal(rows.length);
+    setIsRestoring(true);
+    setIsSubmitting(false);
+
+    for (let i = 0; i < rows.length; i++) {
+      const v = rows[i];
+      let payload: any = { id: v.id, objectType, operation };
+
+      if (operation === "Tags-removed") {
+        payload.tags = v.removedTags;
+      } else if (operation === "Tags-Added") {
+        payload.tags = v.tagList
+          ? v.tagList.split(",").map((t: string) => t.trim())
+          : [];
+      } else if (operation === "Metafield-removed") {
+        payload.namespace = v.namespace || v.data?.namespace;
+        payload.key = v.key || v.data?.key;
+        payload.type = v.type || v.data?.type;
+        payload.value = v.value || v.data?.value;
+      } else if (operation === "Metafield-updated") {
+        payload.namespace = v.namespace || v.data?.namespace;
+        payload.key = v.key || v.data?.key;
+        payload.type = v.type || v.data?.type;
+        payload.value = v.value || v.data?.value;
+      }
+      const formData = new FormData();
+      formData.append("rows", JSON.stringify([payload]));
+
+      const res = await fetch("/api/revert/db", {
+        method: "POST",
+        body: formData,
+      }).then((r) => r.json());
+
+      if (res.success) {
+        setRestoreCompleted((prev) => prev + 1);
+      }
+    }
+  };
 
   // ---- MODULES ----
   const modules = [
@@ -130,8 +358,133 @@ export default function HomePage() {
               </p>
             </Banner>
           </Layout.Section>
+
+
+
+          {/* RECENT ACTIVITY SECTION */}
+
+          {logs.length > 0 && (
+            <Layout.Section>
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Box
+                      background="bg-surface-info-subdued"
+                      padding="200"
+                      borderRadius="200"
+                    >
+                      <Icon source={ClockIcon} tone="info" />
+                    </Box>
+                    <BlockStack gap="050">
+                      <Text as="h2" variant="headingMd">
+                        Recent Activity
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Check what you did recently.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                </InlineStack>
+
+                <Recent
+                  logs={logs}
+                  openRow={openRow}
+                  setOpenRow={setOpenRow}
+                  handleRestore={handleRestoreClick}
+                  isLoading={isLoading}
+                  onNext={() => { }}
+                  onPrev={() => { }}
+                  hasNext={false}
+                  hasPrev={false}
+                  isDbCreated={iscreateDB}
+                  onCreateDb={handleCreateDatabaseClick}
+                />
+              </BlockStack>
+            </Layout.Section>
+          )}
+
+
         </Layout>
       </BlockStack>
+
+      <Modal
+        open={modalState.isOpen || isRestoring}
+        onClose={() => {
+          if (isRestoring && restoreCompleted < restoreTotal) return;
+          if (isRestoring && restoreCompleted >= restoreTotal) {
+            setIsRestoring(false);
+            setModalState({ ...modalState, isOpen: false });
+            return;
+          }
+          setModalState({ ...modalState, isOpen: false });
+        }}
+        title={
+          isRestoring
+            ? restoreCompleted < restoreTotal
+              ? "Restoring Data..."
+              : "Restore Complete"
+            : modalState.title || "Confirm Action"
+        }
+        primaryAction={
+          isRestoring
+            ? restoreCompleted >= restoreTotal
+              ? {
+                content: "Done",
+                onAction: () => {
+                  setIsRestoring(false);
+                  setModalState({ ...modalState, isOpen: false });
+                },
+              }
+              : undefined
+            : {
+              content:
+                modalState.title === "Create Database"
+                  ? "Yes, Create"
+                  : "Restore",
+              onAction: handleConfirmAction,
+              destructive: true,
+              loading: isSubmitting,
+            }
+        }
+        secondaryActions={
+          isRestoring
+            ? []
+            : [
+              {
+                content:
+                  modalState.title === "Create Database"
+                    ? "Maybe Later"
+                    : "Cancel",
+                onAction: () =>
+                  setModalState({ ...modalState, isOpen: false }),
+              },
+            ]
+        }
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text as="p">{modalState.message}</Text>
+            {isRestoring && (
+              <BlockStack gap="200">
+                <ProgressBar
+                  progress={
+                    restoreTotal > 0
+                      ? (restoreCompleted / restoreTotal) * 100
+                      : 0
+                  }
+                  tone="highlight"
+                />
+                <Text as="p" tone="subdued">
+                  {restoreCompleted < restoreTotal
+                    ? `Restoring item ${restoreCompleted} of ${restoreTotal}`
+                    : `Successfully restored ${restoreTotal} items.`}
+                </Text>
+              </BlockStack>
+            )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
 
     </Page >
   );
