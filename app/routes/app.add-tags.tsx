@@ -26,7 +26,7 @@ import {
 } from "@shopify/polaris";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { fetchResourceId } from "app/functions/remove-tag-action";
-
+import CsvPreviewModal from "../component/CsvPreviewModal";
 
 import { DatabaseIcon } from "@shopify/polaris-icons";
 
@@ -202,8 +202,9 @@ export default function SimpleTagManager() {
   const [isRunning, setIsRunning] = useState(false);
   const lastProcessedRef = useRef<any>(null);
 
-  // Modals
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [rawCsvData, setRawCsvData] = useState<any[]>([]);
   const [alert, setAlert] = useState<{ active: boolean; title: string; message: string; tone?: 'critical' | 'success' }>({
     active: false,
     title: "",
@@ -325,10 +326,11 @@ export default function SimpleTagManager() {
 
 
 
-  
+
   useEffect(() => {
     // Reset state on object type change
     setCsvData([]);
+    setRawCsvData([]);
     setResults([]);
     setProgress(0);
     setTags([]);
@@ -345,6 +347,7 @@ export default function SimpleTagManager() {
 
   useEffect(() => {
     setCsvData([]);
+    setRawCsvData([]);
     setFile(null);
     setAlert(prev => ({ ...prev, active: false }))
   }, [specificField, csvType]);
@@ -445,6 +448,7 @@ export default function SimpleTagManager() {
 
         setFile(file);
         setCsvData(rows as { id: string }[]);
+        setRawCsvData(res.data);
         setProgress(0);
         setResults([]);
         setAlert(prev => ({ ...prev, active: false }))
@@ -585,6 +589,7 @@ export default function SimpleTagManager() {
 
   const resetAll = () => {
     setCsvData([]);
+    setRawCsvData([]);
     setResults([]);
     setProgress(0);
     setTags([]);
@@ -744,7 +749,7 @@ export default function SimpleTagManager() {
 
                     <Button
                       variant="primary"
-                      onClick={() => setConfirmModalOpen(true)}
+                      onClick={() => setPreviewModalOpen(true)}
                       disabled={!csvData.length || isRunning}
                       loading={isRunning}
                       fullWidth
@@ -803,6 +808,20 @@ export default function SimpleTagManager() {
         </Layout>
       </BlockStack>
 
+      <CsvPreviewModal
+        open={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        onConfirm={() => {
+          setPreviewModalOpen(false);
+          handleRun();
+        }}
+        data={rawCsvData}
+        title="Ready to Add Tags?"
+        confirmText="Add Tags"
+        destructive={false}
+        confirmationMessage={`You are ready to add ${tags.length} tag's to ${csvData.length} ${csvData.length == 1 ? objectType : `${objectType}'s`} from your CSV.`}
+      />
+
       <Modal
         open={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
@@ -821,7 +840,6 @@ export default function SimpleTagManager() {
         <Modal.Section>
           <Text as="p">
             You are ready to add {tags.length} tag's to {csvData.length} resource's from your CSV.
-            This process will run in the background.
           </Text>
         </Modal.Section>
       </Modal>

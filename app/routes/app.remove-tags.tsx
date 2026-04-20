@@ -8,6 +8,7 @@ import {
   handleRemoveSpecific,
 } from "app/functions/remove-tag-action";
 import Papa from "papaparse";
+import CsvPreviewModal from "../component/CsvPreviewModal";
 import {
   Page,
   Layout,
@@ -32,7 +33,6 @@ import {
   useBreakpoints
 } from "@shopify/polaris";
 import { DatabaseIcon, PlusIcon, XIcon } from "@shopify/polaris-icons";
-
 
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -90,6 +90,8 @@ export default function TagManager() {
 
   // Modals & Alerts
   const [modalOpen, setModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [rawCsvData, setRawCsvData] = useState<any[]>([]);
   const [alert, setAlert] = useState<{
     active: boolean;
     title: string;
@@ -387,31 +389,31 @@ export default function TagManager() {
     }
   }, [specificEnd, globalResult.results]);
 
-useEffect(() => {
-  if (!isRemoving) return;
+  useEffect(() => {
+    if (!isRemoving) return;
 
-  // 1. Block reload / tab close
-  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    e.preventDefault();
-    e.returnValue = "";
-  };
+    // 1. Block reload / tab close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
 
-  // 2. Block back / forward navigation
-  const blockNavigation = () => {
+    // 2. Block back / forward navigation
+    const blockNavigation = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Push a state so back button has nowhere to go
     window.history.pushState(null, "", window.location.href);
-  };
 
-  // Push a state so back button has nowhere to go
-  window.history.pushState(null, "", window.location.href);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", blockNavigation);
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  window.addEventListener("popstate", blockNavigation);
-
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    window.removeEventListener("popstate", blockNavigation);
-  };
-}, [isRemoving]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", blockNavigation);
+    };
+  }, [isRemoving]);
 
 
   useEffect(() => {
@@ -425,6 +427,7 @@ useEffect(() => {
   // Logic helpers
   const handleClearCSV = () => {
     setCsvIds([]);
+    setRawCsvData([]);
     setFileName(null);
   };
 
@@ -495,6 +498,7 @@ useEffect(() => {
           }
 
           setCsvIds(values as string[]);
+          setRawCsvData(res.data);
           setAlert((prev) => ({ ...prev, active: false }));
         },
         error: (err) => {
@@ -622,6 +626,7 @@ useEffect(() => {
     setFetchedItems([]);
     setSelectedTags([]);
     setCsvIds([]);
+    setRawCsvData([]);
     setGlobalResult(emptyGlobalState);
     setFinalSpecificResults([]);
     setNoTagsFound(false);
@@ -639,6 +644,7 @@ useEffect(() => {
     if (removalMode === "global") {
       setSpecificField("Id");
       setCsvIds([]);
+      setRawCsvData([]);
       setGlobalResult(emptyGlobalState);
       setFinalSpecificResults([]);
       setNoTagsFound(false);
@@ -647,6 +653,7 @@ useEffect(() => {
       setFileName(null);
     }
     setCsvIds([]);
+    setRawCsvData([]);
     setFileName(null);
     setAlert((prev) => ({ ...prev, active: false }));
 
@@ -1041,7 +1048,11 @@ useEffect(() => {
                                 });
                                 return;
                               }
-                              setModalOpen(true);
+                              if (removalMode !== "global" && csvIds.length > 0) {
+                                setPreviewModalOpen(true);
+                              } else {
+                                setModalOpen(true);
+                              }
                             }}
                           >
                             Remove Selected Tags
@@ -1233,6 +1244,20 @@ useEffect(() => {
         </Modal.Section>
       </Modal>
 
+      <CsvPreviewModal
+        open={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        onConfirm={() => {
+          setPreviewModalOpen(false);
+          handleRemoveConfirm();
+        }}
+        data={rawCsvData}
+        title="Confirm Removal"
+        confirmText="Yes, Remove Tags"
+        destructive={true}
+        confirmationMessage={`Are you sure you want to remove ${selectedTags.length === 1 ? "1 tag" : `${selectedTags.length} tag's`} from ${rawCsvData.length} ${rawCsvData.length == 1 ? objectType : `${objectType}'s`} ?`}
+      />
+
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1248,7 +1273,7 @@ useEffect(() => {
       >
         <Modal.Section>
           <Text as="p">
-            Are you sure you want to remove {selectedTags.length} tag's?
+            Are you sure you want to remove {selectedTags.length === 1 ? "1 tag" : `${selectedTags.length} tag's`} from all {objectType}'s ?
           </Text>
         </Modal.Section>
       </Modal>

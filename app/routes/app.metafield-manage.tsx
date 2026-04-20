@@ -43,6 +43,7 @@ import {
 } from "app/functions/metafield-manage-action";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import Papa from "papaparse";
+import CsvPreviewModal from "../component/CsvPreviewModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -191,6 +192,8 @@ export default function MetafieldManage() {
 
   // Modals & Alerts
   const [modalOpen, setModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [rawCsvData, setRawCsvData] = useState<any[]>([]);
   const [alert, setAlert] = useState<{ active: boolean; title: string; message: string; tone?: 'critical' | 'success' | 'info' }>({
     active: false,
     title: "",
@@ -222,31 +225,31 @@ export default function MetafieldManage() {
   const [showInfoMeta, setshowInfoMeta] = useState(false);
   const lastProcessedRef = useRef<any>(null);
 
-useEffect(() => {
-  if (!isDeleting) return;
+  useEffect(() => {
+    if (!isDeleting) return;
 
-  // 1. Block reload / tab close
-  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    e.preventDefault();
-    e.returnValue = "";
-  };
+    // 1. Block reload / tab close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
 
-  // 2. Block back / forward navigation
-  const blockNavigation = () => {
+    // 2. Block back / forward navigation
+    const blockNavigation = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Push a state so back button has nowhere to go
     window.history.pushState(null, "", window.location.href);
-  };
 
-  // Push a state so back button has nowhere to go
-  window.history.pushState(null, "", window.location.href);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", blockNavigation);
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  window.addEventListener("popstate", blockNavigation);
-
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    window.removeEventListener("popstate", blockNavigation);
-  };
-}, [isDeleting]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", blockNavigation);
+    };
+  }, [isDeleting]);
 
   // --- Core Utility Functions ---
   function downloadResultsCSV(results: OperationResult[], removeMode: string) {
@@ -374,6 +377,7 @@ useEffect(() => {
   const handleMetafieldSelection = (m: MetafieldDefinition) => {
     setSelectedMetafield(m);
     setCsvRows([]);
+    setRawCsvData([]);
     setRemoveMode("all");
     setProgress(0);
     setResults([]);
@@ -387,6 +391,7 @@ useEffect(() => {
     const file = acceptedFiles[0];
     if (!file) {
       setCsvRows([]);
+      setRawCsvData([]);
       setCsvData(0);
       return;
     }
@@ -401,7 +406,7 @@ useEffect(() => {
 
       if (!parsed.length) {
         setAlert({ active: true, title: "Empty CSV", message: "CSV is empty", tone: 'critical' });
-        setCsvRows([]); setCsvData(0); return;
+        setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
       }
 
       const headers = parsed[0].map((h: string) => h.trim().toLowerCase());
@@ -409,7 +414,7 @@ useEffect(() => {
 
       if (!headers.includes(specificField.toLowerCase()) || !headers.includes("value")) {
         setAlert({ active: true, title: "Missing Columns", message: `CSV must contain '${specificField}' and 'value' columns.`, tone: 'critical' });
-        setCsvRows([]); setCsvData(0); return;
+        setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
       }
 
       const idIndex = headers.indexOf(specificField.toLowerCase());
@@ -464,18 +469,19 @@ useEffect(() => {
         return row;
       }).filter((r): r is CsvRow => r !== null);
 
-      if (hasInvalidGid) { setCsvRows([]); setCsvData(0); return; }
+      if (hasInvalidGid) { setCsvRows([]); setRawCsvData([]); setCsvData(0); return; }
       if (rows.length > 5000) {
         setAlert({ active: true, title: "Limit Exceeded", message: "Only 5000 records will add at a time", tone: 'critical' });
-        setCsvRows([]); setCsvData(0); return;
+        setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
       }
       if (rows.length === 0) {
         setAlert({ active: true, title: "Valid Record Not Found", message: "No valid records found in the CSV file.", tone: 'critical' });
-        setCsvRows([]); setCsvData(0); return;
+        setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
       }
 
       setCsvRows(rows);
       setCsvData(rows.length);
+      setRawCsvData(parsed);
       setResults([]);
       setProgress(0);
       setCurrentIndex(0);
@@ -522,18 +528,19 @@ useEffect(() => {
             return row;
           }).filter((r: unknown): r is CsvRow => r !== null);
 
-          if (hasInvalidGid) { setCsvRows([]); setCsvData(0); return; }
+          if (hasInvalidGid) { setCsvRows([]); setRawCsvData([]); setCsvData(0); return; }
           if (rows.length > 5000) {
             setAlert({ active: true, title: "Limit Exceeded", message: "Only 5000 records will add at a time", tone: 'critical' });
-            setCsvRows([]); setCsvData(0); return;
+            setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
           }
           if (rows.length === 0) {
             setAlert({ active: true, title: "Valid Record Not Found", message: "No valid records found. Please follow the CSV Format", tone: 'critical' });
-            setCsvRows([]); setCsvData(0); return;
+            setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
           }
 
           setCsvData(rows.length);
           setCsvRows(rows);
+          setRawCsvData(res.data);
           setResults([]);
           setProgress(0);
           setCurrentIndex(0);
@@ -542,7 +549,7 @@ useEffect(() => {
         },
         error: (err) => {
           setAlert({ active: true, title: "Parsing Error", message: "Failed to parse CSV file.", tone: 'critical' });
-          setCsvRows([]); setCsvData(0);
+          setCsvRows([]); setRawCsvData([]); setCsvData(0);
         }
       });
     }
@@ -635,7 +642,11 @@ useEffect(() => {
       return;
     }
 
-    setModalOpen(true);
+    if (removeMode !== 'all' && csvRows.length > 0) {
+      setPreviewModalOpen(true);
+    } else {
+      setModalOpen(true);
+    }
   };
 
   const handleConfirm = () => {
@@ -664,6 +675,7 @@ useEffect(() => {
   const resetToHome = () => {
     setSelectedMetafield(null);
     setCsvRows([]);
+    setRawCsvData([]);
     setRemoveMode("all");
     setListUpdateMode("merge");
     setListRemoveMode("full");
@@ -682,6 +694,7 @@ useEffect(() => {
   const backToSelectedFeild = () => {
     setSelectedMetafield(null);
     setCsvRows([]);
+    setRawCsvData([]);
     setRemoveMode("all");
     setListUpdateMode("merge");
     setListRemoveMode("full");
@@ -698,6 +711,7 @@ useEffect(() => {
 
   const handleClearCSV = () => {
     setCsvRows([]);
+    setRawCsvData([]);
     setCsvData(0);
     setFileName(null);
   };
@@ -1223,6 +1237,7 @@ useEffect(() => {
   useEffect(() => {
     setCsvData(0);
     setCsvRows([]);
+    setRawCsvData([]);
     setListUpdateMode("merge");
     setListRemoveMode("full");
     setProgress(0);
@@ -1309,6 +1324,7 @@ useEffect(() => {
   useEffect(() => {
     setCsvData(0);
     setCsvRows([]);
+    setRawCsvData([]);
     setProgress(0);
     setResults([]);
     setCompleted(false);
@@ -1323,6 +1339,7 @@ useEffect(() => {
   useEffect(() => {
     setCsvData(0);
     setCsvRows([]);
+    setRawCsvData([]);
     setProgress(0);
     setResults([]);
     setCompleted(false);
@@ -1732,6 +1749,24 @@ useEffect(() => {
         </Modal.Section>
       </Modal>
 
+      <CsvPreviewModal
+        open={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        onConfirm={() => {
+          setPreviewModalOpen(false);
+          handleConfirm();
+        }}
+        data={rawCsvData}
+        title={removeMode === "update" ? "Confirm Metafield Update" : "Confirm Metafield Deletion"}
+        confirmText={removeMode === "update" ? "Update" : "Delete"}
+        destructive={removeMode !== 'update'}
+        confirmationMessage={
+          removeMode === "update"
+            ? `This metafield will be updated/added for the selected ${specificField}'s in the CSV.`
+            : `This metafield will be deleted only for the selected ${specificField}'s in the CSV.`
+        }
+      />
+
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1746,7 +1781,7 @@ useEffect(() => {
         <Modal.Section>
           <Text as="p">
             {removeMode === "all"
-              ? "This metafield will be deleted from ALL items. This action cannot be undone."
+              ? `This metafield will be deleted from ALL ${specificField}'s.`
               : removeMode === "update"
                 ? `This metafield will be updated/added for the selected ${specificField}'s in the CSV.`
                 : `This metafield will be deleted only for the selected ${specificField}'s in the CSV.`}

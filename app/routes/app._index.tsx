@@ -359,45 +359,52 @@ export default function HomePage() {
             </Banner>
           </Layout.Section>
 
+
+
           {/* RECENT ACTIVITY SECTION */}
-          <Layout.Section>
-            <BlockStack gap="400">
-              <InlineStack align="space-between" blockAlign="center">
-                <InlineStack gap="200" blockAlign="center">
-                  <Box
-                    background="bg-surface-info-subdued"
-                    padding="200"
-                    borderRadius="200"
-                  >
-                    <Icon source={ClockIcon} tone="info" />
-                  </Box>
-                  <BlockStack gap="050">
-                    <Text as="h2" variant="headingMd">
-                      Recent Activity
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Check what you did recently.
-                    </Text>
-                  </BlockStack>
+
+          {logs.length > 0 && (
+            <Layout.Section>
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Box
+                      background="bg-surface-info-subdued"
+                      padding="200"
+                      borderRadius="200"
+                    >
+                      <Icon source={ClockIcon} tone="info" />
+                    </Box>
+                    <BlockStack gap="050">
+                      <Text as="h2" variant="headingMd">
+                        Recent Activity
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Check what you did recently.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
                 </InlineStack>
 
-              </InlineStack>
+                <Recent
+                  logs={logs}
+                  openRow={openRow}
+                  setOpenRow={setOpenRow}
+                  handleRestore={handleRestoreClick}
+                  isLoading={isLoading}
+                  onNext={() => { }}
+                  onPrev={() => { }}
+                  hasNext={false}
+                  hasPrev={false}
+                  isDbCreated={iscreateDB}
+                  onCreateDb={handleCreateDatabaseClick}
+                />
+              </BlockStack>
+            </Layout.Section>
+          )}
 
-              <Recent
-                logs={logs}
-                openRow={openRow}
-                setOpenRow={setOpenRow}
-                handleRestore={handleRestoreClick}
-                isLoading={isLoading}
-                onNext={() => { }}
-                onPrev={() => { }}
-                hasNext={false}
-                hasPrev={false}
-                isDbCreated={iscreateDB}
-                onCreateDb={handleCreateDatabaseClick}
-              />
-            </BlockStack>
-          </Layout.Section>
+
         </Layout>
       </BlockStack>
 

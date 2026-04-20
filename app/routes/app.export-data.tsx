@@ -1,4 +1,4 @@
-import { Page, Card, Layout, Select, Button, BlockStack, Text, InlineStack } from "@shopify/polaris";
+import { Page, Card, Layout, Select, Button, BlockStack, Text, InlineStack, Modal } from "@shopify/polaris";
 import { useState, useEffect } from "react";
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher, useNavigate } from "react-router";
 import { HomeIcon } from "@shopify/polaris-icons";
@@ -82,6 +82,8 @@ export default function ExportData() {
   const [includeTags, setIncludeTags] = useState(true);
   const [includeMetafields, setIncludeMetafields] = useState(true);
   const [metaobjectType, setMetaobjectType] = useState("");
+
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [isExporting, setIsExporting] = useState(false);
   const [accumulatedRecords, setAccumulatedRecords] = useState<any[]>([]);
@@ -210,35 +212,35 @@ export default function ExportData() {
     URL.revokeObjectURL(url);
   };
 
-useEffect(() => {
-  if (!isExporting) return;
+  useEffect(() => {
+    if (!isExporting) return;
 
-  // 1. Block reload / tab close
-  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    e.preventDefault();
-    e.returnValue = "";
-  };
+    // 1. Block reload / tab close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
 
-  // 2. Block back / forward navigation
-  const blockNavigation = () => {
+    // 2. Block back / forward navigation
+    const blockNavigation = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Push a state so back button has nowhere to go
     window.history.pushState(null, "", window.location.href);
-  };
 
-  // Push a state so back button has nowhere to go
-  window.history.pushState(null, "", window.location.href);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", blockNavigation);
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  window.addEventListener("popstate", blockNavigation);
-
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    window.removeEventListener("popstate", blockNavigation);
-  };
-}, [isExporting]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", blockNavigation);
+    };
+  }, [isExporting]);
 
 
 
-  
+
 
   return (
 
@@ -351,7 +353,7 @@ useEffect(() => {
               <Button
                 variant="primary"
                 loading={isExporting}
-                onClick={handleExport}
+                onClick={() => setModalOpen(true)}
                 disabled={isExporting}
               >
                 {isExporting ? "Exporting…" : "Export CSV"}
@@ -360,6 +362,28 @@ useEffect(() => {
           </Card>
         </Layout.Section>
       </Layout>
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Confirm Export"
+        primaryAction={{
+          content: "Yes, Export",
+          onAction: () => {
+            setModalOpen(false);
+            handleExport();
+          },
+        }}
+        secondaryActions={[
+          { content: "Cancel", onAction: () => setModalOpen(false) },
+        ]}
+      >
+        <Modal.Section>
+          <Text as="p">
+            Are you sure you want to export {resource}'s {includeTags && includeMetafields ? "with tags and metafields" : includeTags ? "with tags" : includeMetafields ? "with metafields" : ""}?
+          </Text>
+        </Modal.Section>
+      </Modal>
     </Page>
 
   );
