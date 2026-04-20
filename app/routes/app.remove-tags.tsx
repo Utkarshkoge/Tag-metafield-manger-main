@@ -312,6 +312,9 @@ export default function TagManager() {
 
       // Global Remove Mode
       if (data.mode === "remove-global") {
+        const currentProcessed = globalResult.results.length + (data.results?.length || 0);
+        const limitReached = currentProcessed >= 5000;
+
         setGlobalResult((prev: any) => {
           const merged = [...prev.results, ...(data.results || [])];
           return {
@@ -320,11 +323,11 @@ export default function TagManager() {
             results: merged,
             totalProcessed: merged.length,
             success: prev.success && data.success,
-            complete: !data.hasNextPage,
+            complete: !data.hasNextPage || limitReached,
             nextCursor: data.nextCursor || null,
           };
         });
-        if (data.hasNextPage) {
+        if (data.hasNextPage && !limitReached) {
           const fd = new FormData();
           fd.append("objectType", objectType);
           fd.append("tags", JSON.stringify(selectedTags));
@@ -972,7 +975,7 @@ export default function TagManager() {
                             title=""
                             choices={[
                               {
-                                label: "Global Removal (All items store-wide)",
+                                label: `Global Removal (From starting 5000 ${objectType}s)`,
                                 value: "global",
                               },
                               {
@@ -1273,7 +1276,7 @@ export default function TagManager() {
       >
         <Modal.Section>
           <Text as="p">
-            Are you sure you want to remove {selectedTags.length === 1 ? "1 tag" : `${selectedTags.length} tag's`} from all {objectType}'s ?
+            Are you sure you want to remove {selectedTags.length === 1 ? "1 tag" : `${selectedTags.length} tag's`} from starting 5000 {objectType}'s ?
           </Text>
         </Modal.Section>
       </Modal>

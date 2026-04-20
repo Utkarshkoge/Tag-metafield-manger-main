@@ -843,7 +843,7 @@ export default function MetafieldManage() {
         } else {
           setProgress(10);
         }
-        if (hasMore && nextCursor) {
+        if (hasMore && nextCursor && updatedResults.length < 5000) {
           const formData = new FormData();
           formData.append("mode", "removeMetafield");
           formData.append("objectType", objectType);
@@ -1781,7 +1781,7 @@ export default function MetafieldManage() {
         <Modal.Section>
           <Text as="p">
             {removeMode === "all"
-              ? `This metafield will be deleted from ALL ${specificField}'s.`
+              ? `This metafield will be deleted from starting 5000 ${specificField}'s.`
               : removeMode === "update"
                 ? `This metafield will be updated/added for the selected ${specificField}'s in the CSV.`
                 : `This metafield will be deleted only for the selected ${specificField}'s in the CSV.`}
