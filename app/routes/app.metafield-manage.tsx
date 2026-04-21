@@ -479,9 +479,18 @@ export default function MetafieldManage() {
         setCsvRows([]); setRawCsvData([]); setCsvData(0); return;
       }
 
+      const originalHeaders = parsed[0].map((h: string) => h.trim());
+      const rawDataObjects = dataRows.map((cols: string[]) => {
+        const obj: Record<string, string> = {};
+        originalHeaders.forEach((header: string, index: number) => {
+          obj[header] = cols[index];
+        });
+        return obj;
+      });
+
       setCsvRows(rows);
       setCsvData(rows.length);
-      setRawCsvData(parsed);
+      setRawCsvData(rawDataObjects);
       setResults([]);
       setProgress(0);
       setCurrentIndex(0);
@@ -1573,9 +1582,9 @@ export default function MetafieldManage() {
                     <ChoiceList
                       title="Operation Mode"
                       choices={selectedMetafield?.type?.name === 'file_reference' ? [
-                        { label: 'Global Deletion (Remove from ALL items)', value: 'all' }] :
+                        { label: 'Global Deletion (Remove from starting 5000 items)', value: 'all' }] :
                         [
-                          { label: 'Global Deletion (Remove from ALL items)', value: 'all' },
+                          { label: 'Global Deletion (Remove from starting 5000 items)', value: 'all' },
                           { label: 'Targeted Removal (Remove from CSV list)', value: 'specific' },
                           { label: 'Bulk Update (Update/Add via CSV)', value: 'update' }
                         ]}
