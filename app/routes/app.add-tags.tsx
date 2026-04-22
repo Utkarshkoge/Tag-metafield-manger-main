@@ -36,7 +36,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // eslint-disable-next-line no-undef
     return { apiKey: process.env.SHOPIFY_API_KEY || "" };
   } catch (error) {
-    console.error("Loader error:", error);
     throw new Response("Unauthorized or Server Error", { status: 500 });
   }
 };
@@ -79,7 +78,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       rows = JSON.parse((rowsRaw as string) || "[]");
       flag = JSON.parse((flagRaw as string) || "false");
     } catch (parseError) {
-      console.error("JSON Parse Error:", parseError);
       return {
         success: false,
         error: "Invalid data format received.",

@@ -35,7 +35,6 @@ export async function action({ request }: ActionFunctionArgs) {
           resolvedId = await fetchMetaResourceID(admin, objectType, resolvedId);
         }
       } catch (err: any) {
-        console.error("❌ ID resolution failed:", err);
         return Response.json({
           success: false,
           errors: [{ message: `ID resolution failed: ${err.message}` }],

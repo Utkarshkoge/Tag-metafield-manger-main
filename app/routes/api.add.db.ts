@@ -116,7 +116,6 @@ export async function action({ request }: ActionFunctionArgs) {
       database: fetchData.data.metaobjects.nodes,
     };
   } catch (error: any) {
-    console.error("Metaobject DB error:", error);
     return {
       success: false,
       error: "Internal server error",

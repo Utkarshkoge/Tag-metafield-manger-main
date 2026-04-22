@@ -135,8 +135,6 @@ export default function HomePage() {
       const res = await response.json();
       if (res.success) {
         setRestore(true); // triggers fetcher.load
-      } else {
-        console.error("Restore failed:", res.errors);
       }
     };
 

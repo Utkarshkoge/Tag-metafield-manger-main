@@ -112,7 +112,6 @@ export async function action({ request }: ActionFunctionArgs) {
       skippedCount: skipped.length,
     };
   } catch (error) {
-    console.error(" Metaobject cleanup pagination error:", error);
     return {
       success: false,
       error: "Internal server error",

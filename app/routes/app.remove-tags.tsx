@@ -41,7 +41,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // eslint-disable-next-line no-undef
     return { apiKey: process.env.SHOPIFY_API_KEY || "" };
   } catch (error) {
-    console.error("Loader error:", error);
     throw new Response("Unauthorized or Server Error", { status: 500 });
   }
 };
@@ -64,7 +63,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { error: "Invalid mode" };
   } catch (err: any) {
-    console.error("Action error:", err);
     return {
       success: false,
       error: err.message || "Something went wrong in the action handler.",
@@ -268,7 +266,6 @@ export default function TagManager() {
     lastProcessedRef.current = fetcher.data;
 
     const data = fetcher.data;
-    console.log(data);
     if (fetcher.data?.successdb === undefined) {
       // Fetch Mode
       if (data.mode === "fetch" && data.success) {
@@ -366,7 +363,6 @@ export default function TagManager() {
   // Logging
   useEffect(() => {
     let results = [];
-    console.log("globalResult", globalResult);
     if (globalResult.complete && globalResult.results.length > 0) {
       results = globalResult.results;
     }

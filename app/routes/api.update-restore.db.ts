@@ -36,7 +36,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return { success: true, updated: data?.metaobjectUpdate?.metaobject };
   } catch (err: any) {
-    console.error("Restore update error:", err);
     return {
       success: false,
       message: "Internal server error",

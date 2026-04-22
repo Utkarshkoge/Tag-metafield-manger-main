@@ -71,7 +71,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const data = await response.json();
 
     if ((data as any).errors) {
-      console.error("GraphQL errors:", (data as any).errors);
       return {
         successdb: false,
         error: "GraphQL error while fetching metaobjects",
@@ -109,7 +108,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     };
 
   } catch (error: any) {
-    console.error("Fetch Metaobject DB error:", error);
     return {
       successdb: false,
       error: "Failed to fetch metaobject database",
