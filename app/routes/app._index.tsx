@@ -2,7 +2,7 @@ import { useNavigate, useFetcher } from "react-router";
 import { useState, useEffect, type ReactNode } from "react";
 import type { LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
-import { LogsTable, Recent, type Log } from "app/component/HistoryForm";
+import { Recent, type Log } from "app/component/HistoryForm";
 import {
   Page,
   Layout,
@@ -24,7 +24,6 @@ import {
   DatabaseIcon,
   QuestionCircleIcon,
   ClockIcon,
-  AlertTriangleIcon,
 } from "@shopify/polaris-icons";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -58,46 +57,12 @@ export default function HomePage() {
   const [restore, setRestore] = useState(true);
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [iscreateDB, setIscreateDB] = useState(true);
-  const [pageInfo, setPageInfo] = useState<PageInfo>({
-    hasNextPage: false,
-    hasPreviousPage: false,
-    startCursor: null,
-    endCursor: null,
-  });
-
   const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
     title: "",
     message: "",
     logToRestore: null,
   });
-
-  //  Run fetch only when restore is triggered manually
-  function createDatabase() {
-    fetcher.submit(
-      {}, // no body needed
-      {
-        method: "post",
-        action: "/api/metaCreate/db",
-      }
-    );
-  }
-
-  const handleCreateDatabaseClick = () => {
-    setModalState({
-      isOpen: true,
-      title: "Create Database",
-      message: (
-        <span>
-          Creating a metaobject named{" "}
-          <span className="font-bold">"Tag Metafield App Database"</span> to
-          store your app activity history. Would you like to continue?
-        </span>
-      ),
-      logToRestore: null, // Not a restore action
-    });
-  };
 
   //  Run fetch only when restore is triggered manually
   useEffect(() => {
@@ -144,16 +109,8 @@ export default function HomePage() {
   // Handle fetch results safely
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    if (!fetcher?.data?.successdb) {
-      setIscreateDB(false);
-    } else {
-      setIscreateDB(true);
-    }
     setRestore(false);
     setLogs(fetcher?.data?.database || []);
-    if (fetcher?.data?.pageInfo) {
-      setPageInfo(fetcher.data.pageInfo);
-    }
     setIsLoading(false);
     setModalState((prev) => ({ ...prev, isOpen: false }));
     setIsSubmitting(false);
@@ -184,13 +141,6 @@ export default function HomePage() {
   //  Confirm restore or create DB
   const handleConfirmAction = async () => {
     setIsSubmitting(true);
-    const { title } = modalState;
-
-    if (title === "Create Database") {
-      createDatabase();
-      return;
-    }
-
     const log = modalState.logToRestore;
     if (!log) {
       setIsSubmitting(false);
@@ -391,12 +341,6 @@ export default function HomePage() {
                   setOpenRow={setOpenRow}
                   handleRestore={handleRestoreClick}
                   isLoading={isLoading}
-                  onNext={() => { }}
-                  onPrev={() => { }}
-                  hasNext={false}
-                  hasPrev={false}
-                  isDbCreated={iscreateDB}
-                  onCreateDb={handleCreateDatabaseClick}
                 />
               </BlockStack>
             </Layout.Section>
@@ -436,28 +380,11 @@ export default function HomePage() {
               }
               : undefined
             : {
-              content:
-                modalState.title === "Create Database"
-                  ? "Yes, Create"
-                  : "Restore",
+              content: "Restore",
               onAction: handleConfirmAction,
               destructive: true,
               loading: isSubmitting,
             }
-        }
-        secondaryActions={
-          isRestoring
-            ? []
-            : [
-              {
-                content:
-                  modalState.title === "Create Database"
-                    ? "Maybe Later"
-                    : "Cancel",
-                onAction: () =>
-                  setModalState({ ...modalState, isOpen: false }),
-              },
-            ]
         }
       >
         <Modal.Section>
