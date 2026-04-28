@@ -22,11 +22,10 @@ export default function App() {
     <AppProvider embedded apiKey={apiKey}>
       <PolarisAppProvider i18n={translations}>
         <s-app-nav>
-          {/* <s-link href="/app/add-tags">Add Tags</s-link>
-          <s-link href="/app/remove-tags">Remove Tags</s-link>
-          <s-link href="/app/metafield-manage">Metafield Manager</s-link> */}
+
           <s-link href="/app/export-data">Export Data</s-link>
           <s-link href="/app/history">History</s-link>
+
           <s-link href="/app/faq">FAQ</s-link>
         </s-app-nav>
         <Outlet />
