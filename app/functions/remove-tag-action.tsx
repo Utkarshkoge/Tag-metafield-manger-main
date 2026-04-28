@@ -431,7 +431,6 @@ export async function fetchResourceId(admin: any, resourceType: string, value: a
   let type = resourceType === "blogPost" ? "article" : resourceType;
   const config: any = queries[type];
   if (!config) {
-    console.error("Unsupported resource type:", resourceType);
     throw new Error(`Unsupported resource type: ${resourceType}`);
   }
   const builtValue = config.buildQuery(value);

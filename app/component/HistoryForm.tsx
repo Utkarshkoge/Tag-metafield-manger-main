@@ -42,6 +42,14 @@ interface LogsTableProps {
   onCreateDb: () => void;
 }
 
+interface RecentProps {
+  logs: Log[];
+  openRow: number | null;
+  setOpenRow: (row: number | null) => void;
+  handleRestore: (log: Log) => void;
+  isLoading: boolean;
+}
+
 export function LogsTable({ logs, openRow, setOpenRow, handleRestore, isLoading, onNext, onPrev, hasNext, hasPrev, isDbCreated, onCreateDb }: LogsTableProps) {
 
   const resourceName = {
@@ -280,7 +288,7 @@ function LogDetailsContent({ log }: { log: Log }) {
   );
 }
 
-export function Recent({ logs, openRow, setOpenRow, handleRestore, isLoading, onNext, onPrev, hasNext, hasPrev, isDbCreated, onCreateDb }: LogsTableProps) {
+export function Recent({ logs, openRow, setOpenRow, handleRestore, isLoading }: RecentProps) {
 
   const resourceName = {
     singular: 'log',
@@ -303,22 +311,7 @@ export function Recent({ logs, openRow, setOpenRow, handleRestore, isLoading, on
     );
   }
 
-  if (!isDbCreated) {
-    return (
-      <LegacyCard sectioned>
-        <EmptyState
-          heading="Database Required"
-          action={{
-            content: 'Create Database',
-            onAction: onCreateDb,
-          }}
-          image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-        >
-          <p>A database is required to track your history and enable restore functionality. Please create one to continue.</p>
-        </EmptyState>
-      </LegacyCard>
-    );
-  }
+
 
   if (!logs || logs.length === 0) {
     return (

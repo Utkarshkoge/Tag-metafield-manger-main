@@ -120,7 +120,6 @@ export default function ExportData() {
     if (!isExporting || fetcher.state !== "idle" || !fetcher.data) return;
 
     if (fetcher.data.error) {
-      console.error(fetcher.data.error);
       setIsExporting(false);
       // shopify.toast.show("Export failed");
       return;

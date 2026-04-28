@@ -123,31 +123,31 @@ export default function LogsPage() {
   }, [restore, lastFetchParams]);
 
   // Prevent reload/close while running
-useEffect(() => {
-  if (!isRestoring) return;
+  useEffect(() => {
+    if (!isRestoring) return;
 
-  // 1. Block reload / tab close
-  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    e.preventDefault();
-    e.returnValue = "";
-  };
+    // 1. Block reload / tab close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
 
-  // 2. Block back / forward navigation
-  const blockNavigation = () => {
+    // 2. Block back / forward navigation
+    const blockNavigation = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Push a state so back button has nowhere to go
     window.history.pushState(null, "", window.location.href);
-  };
 
-  // Push a state so back button has nowhere to go
-  window.history.pushState(null, "", window.location.href);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", blockNavigation);
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  window.addEventListener("popstate", blockNavigation);
-
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    window.removeEventListener("popstate", blockNavigation);
-  };
-}, [isRestoring]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", blockNavigation);
+    };
+  }, [isRestoring]);
 
 
   useEffect(() => {
@@ -166,8 +166,6 @@ useEffect(() => {
       const res = await response.json();
       if (res.success) {
         setRestore(true); // triggers fetcher.load
-      } else {
-        console.error("Restore failed:", res.errors);
       }
     };
 

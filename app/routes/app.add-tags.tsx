@@ -27,6 +27,7 @@ import {
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { fetchResourceId } from "app/functions/remove-tag-action";
 import CsvPreviewModal from "../component/CsvPreviewModal";
+import { AddTagsInstructionsModal } from "../components/InstructionsModal";
 
 import { DatabaseIcon } from "@shopify/polaris-icons";
 
@@ -36,7 +37,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // eslint-disable-next-line no-undef
     return { apiKey: process.env.SHOPIFY_API_KEY || "" };
   } catch (error) {
-    console.error("Loader error:", error);
     throw new Response("Unauthorized or Server Error", { status: 500 });
   }
 };
@@ -79,7 +79,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       rows = JSON.parse((rowsRaw as string) || "[]");
       flag = JSON.parse((flagRaw as string) || "false");
     } catch (parseError) {
-      console.error("JSON Parse Error:", parseError);
       return {
         success: false,
         error: "Invalid data format received.",
@@ -205,6 +204,7 @@ export default function SimpleTagManager() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [rawCsvData, setRawCsvData] = useState<any[]>([]);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [alert, setAlert] = useState<{ active: boolean; title: string; message: string; tone?: 'critical' | 'success' }>({
     active: false,
     title: "",
@@ -618,6 +618,12 @@ export default function SimpleTagManager() {
       title="Add Tags"
       subtitle="Search for tags and add them from specific items."
       backAction={{ content: "Home", onAction: goToHome }}
+      secondaryActions={[
+        {
+          content: "Instructions",
+          onAction: () => setInstructionsOpen(true),
+        },
+      ]}
     >
       <BlockStack gap="300">
         {dbChecked && !isDbCreated && (
@@ -889,6 +895,10 @@ export default function SimpleTagManager() {
           </Text>
         </Modal.Section>
       </Modal>
+      <AddTagsInstructionsModal
+        open={instructionsOpen}
+        onClose={() => setInstructionsOpen(false)}
+      />
     </Page>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from "app/functions/remove-tag-action";
 import Papa from "papaparse";
 import CsvPreviewModal from "../component/CsvPreviewModal";
+import { RemoveTagsInstructionsModal } from "../components/InstructionsModal";
 import {
   Page,
   Layout,
@@ -41,7 +42,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // eslint-disable-next-line no-undef
     return { apiKey: process.env.SHOPIFY_API_KEY || "" };
   } catch (error) {
-    console.error("Loader error:", error);
     throw new Response("Unauthorized or Server Error", { status: 500 });
   }
 };
@@ -64,7 +64,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { error: "Invalid mode" };
   } catch (err: any) {
-    console.error("Action error:", err);
     return {
       success: false,
       error: err.message || "Something went wrong in the action handler.",
@@ -103,6 +102,7 @@ export default function TagManager() {
     message: "",
   });
 
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [noTagsFound, setNoTagsFound] = useState(false);
   const [specificField, setSpecificField] = useState("Id");
@@ -268,7 +268,6 @@ export default function TagManager() {
     lastProcessedRef.current = fetcher.data;
 
     const data = fetcher.data;
-    console.log(data);
     if (fetcher.data?.successdb === undefined) {
       // Fetch Mode
       if (data.mode === "fetch" && data.success) {
@@ -366,7 +365,6 @@ export default function TagManager() {
   // Logging
   useEffect(() => {
     let results = [];
-    console.log("globalResult", globalResult);
     if (globalResult.complete && globalResult.results.length > 0) {
       results = globalResult.results;
     }
@@ -715,6 +713,12 @@ export default function TagManager() {
       title="Remove Tags"
       subtitle="Search for tags and remove them globally or from specific items."
       backAction={{ content: "Home", onAction: goToHome }}
+      secondaryActions={[
+        {
+          content: "Instructions",
+          onAction: () => setInstructionsOpen(true),
+        },
+      ]}
     >
 
       <BlockStack gap="300">
@@ -745,7 +749,7 @@ export default function TagManager() {
               <LegacyCard sectioned>
                 <BlockStack gap="400">
                   <Select
-                    label="Object Type"
+                    label="Resource Type"
                     options={[
                       { label: "Product", value: "product" },
                       { label: "Customer", value: "customer" },
@@ -892,7 +896,7 @@ export default function TagManager() {
                       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                     >
                       <p>
-                        Select an object type on the left, enter tags, and click
+                        Select an resource type on the left, enter tags, and click
                         Fetch Tags.
                       </p>
                     </EmptyState>
@@ -1280,6 +1284,10 @@ export default function TagManager() {
           </Text>
         </Modal.Section>
       </Modal>
+      <RemoveTagsInstructionsModal
+        open={instructionsOpen}
+        onClose={() => setInstructionsOpen(false)}
+      />
     </Page>
   );
 }

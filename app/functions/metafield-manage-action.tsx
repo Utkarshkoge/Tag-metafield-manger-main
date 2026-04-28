@@ -63,7 +63,6 @@ export async function fetchResourceCount(admin: any, resource: keyof typeof coun
     const count = json?.data?.[countField]?.count ?? 0;
     return { count };
   } catch (error) {
-    console.error(error);
     return { count: 0 };
   }
 }
@@ -1556,7 +1555,6 @@ export async function getMetaobjectIdFromMetafield(
   const ownerType = metafieldOwnerTypeMap[objectType as keyof typeof metafieldOwnerTypeMap];
 
   if (!ownerType) {
-    console.error("Invalid objectType");
     return null;
   }
 
@@ -1586,7 +1584,6 @@ export async function getMetaobjectIdFromMetafield(
     )?.value;
 
   if (!metaobjectDefinitionId) {
-    console.error("Metafield is NOT a metaobject reference");
     return null;
   }
 
@@ -1604,7 +1601,6 @@ export async function getMetaobjectIdFromMetafield(
   const metaobjectType = typeJson?.data?.metaobjectDefinition?.type;
 
   if (!metaobjectType) {
-    console.error(" Could not resolve metaobject type");
     return null;
   }
 
@@ -1628,7 +1624,6 @@ export async function getMetaobjectIdFromMetafield(
   const metaobjectId = metaJson?.data?.metaobjectByHandle?.id;
 
   if (!metaobjectId) {
-    console.error("Metaobject not found for handle:", metaobjectHandle);
     return null;
   }
 

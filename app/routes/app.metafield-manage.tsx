@@ -44,6 +44,7 @@ import {
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import Papa from "papaparse";
 import CsvPreviewModal from "../component/CsvPreviewModal";
+import { MetafieldManageInstructionsModal } from "../components/InstructionsModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -51,7 +52,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // eslint-disable-next-line no-undef
     return { apiKey: process.env.SHOPIFY_API_KEY || "" };
   } catch (error) {
-    console.error("Loader error:", error);
     throw new Response("Unauthorized or Server Error", { status: 500 });
   }
 };
@@ -194,6 +194,7 @@ export default function MetafieldManage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [rawCsvData, setRawCsvData] = useState<any[]>([]);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [alert, setAlert] = useState<{ active: boolean; title: string; message: string; tone?: 'critical' | 'success' | 'info' }>({
     active: false,
     title: "",
@@ -1367,6 +1368,12 @@ export default function MetafieldManage() {
       title="Metafield Manage"
       subtitle="Manage and sync custom field data across your store."
       backAction={{ content: "Home", onAction: goToHome }}
+      secondaryActions={[
+        {
+          content: "Instructions",
+          onAction: () => setInstructionsOpen(true),
+        },
+      ]}
     >
 
       <BlockStack gap="300">
@@ -1797,6 +1804,10 @@ export default function MetafieldManage() {
           </Text>
         </Modal.Section>
       </Modal>
+      <MetafieldManageInstructionsModal
+        open={instructionsOpen}
+        onClose={() => setInstructionsOpen(false)}
+      />
     </Page>
   );
 }
