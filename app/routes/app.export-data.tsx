@@ -377,26 +377,25 @@ export default function ExportData() {
           { content: "Cancel", onAction: () => setModalOpen(false) },
         ]}
       >
-        <Modal.Section>
+       <Modal.Section>
           <Text as="p">
-{
-  `Are you sure you want to export ${resource}'s ${
-    includeTags &&
-    ["product", "order", "customer", "blogpost"].includes(
-      resource?.toLowerCase()
-    ) &&
-    includeMetafields
-      ? "with tags and metafields"
-      : includeTags &&
-        ["product", "order", "customer", "blogpost"].includes(
-          resource?.toLowerCase()
-        )
-      ? "with tags"
-      : includeMetafields
-      ? "with metafields"
-      : ""
-  }?`
-}          </Text>
+            {
+              `Are you sure you want to export ${resource}'s ${includeTags &&
+                ["product", "order", "customer", "blog_post"].includes(
+                  resource?.toLowerCase()
+                ) &&
+                includeMetafields
+                ? "with tags and metafields"
+                : includeTags &&
+                  ["product", "order", "customer", "blog_post"].includes(
+                    resource?.toLowerCase()
+                  )
+                  ? "with tags"
+                  : includeMetafields
+                    ? "with metafields"
+                    : ""
+              }?`
+            }          </Text>
         </Modal.Section>
       </Modal>
     </Page>
