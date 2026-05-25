@@ -379,8 +379,24 @@ export default function ExportData() {
       >
         <Modal.Section>
           <Text as="p">
-            Are you sure you want to export {resource}'s {includeTags && includeMetafields ? "with tags and metafields" : includeTags ? "with tags" : includeMetafields ? "with metafields" : ""}?
-          </Text>
+{
+  `Are you sure you want to export ${resource}'s ${
+    includeTags &&
+    ["product", "order", "customer", "blogpost"].includes(
+      resource?.toLowerCase()
+    ) &&
+    includeMetafields
+      ? "with tags and metafields"
+      : includeTags &&
+        ["product", "order", "customer", "blogpost"].includes(
+          resource?.toLowerCase()
+        )
+      ? "with tags"
+      : includeMetafields
+      ? "with metafields"
+      : ""
+  }?`
+}          </Text>
         </Modal.Section>
       </Modal>
     </Page>
