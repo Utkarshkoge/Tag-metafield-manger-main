@@ -44,7 +44,7 @@ import {
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import Papa from "papaparse";
 import CsvPreviewModal from "../component/CsvPreviewModal";
-import { MetafieldManageInstructionsModal } from "../components/InstructionsModal";
+import { MetafieldManageInstructionsModal } from "../component/InstructionsModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {

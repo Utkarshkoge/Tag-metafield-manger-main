@@ -9,7 +9,7 @@ import {
 } from "app/functions/remove-tag-action";
 import Papa from "papaparse";
 import CsvPreviewModal from "../component/CsvPreviewModal";
-import { RemoveTagsInstructionsModal } from "../components/InstructionsModal";
+import { RemoveTagsInstructionsModal } from "../component/InstructionsModal";
 import {
   Page,
   Layout,

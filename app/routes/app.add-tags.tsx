@@ -27,7 +27,7 @@ import {
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { fetchResourceId } from "app/functions/remove-tag-action";
 import CsvPreviewModal from "../component/CsvPreviewModal";
-import { AddTagsInstructionsModal } from "../components/InstructionsModal";
+import { AddTagsInstructionsModal } from "../component/InstructionsModal";
 
 import { DatabaseIcon } from "@shopify/polaris-icons";
 
