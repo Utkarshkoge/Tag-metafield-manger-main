@@ -377,7 +377,7 @@ export default function ExportData() {
           { content: "Cancel", onAction: () => setModalOpen(false) },
         ]}
       >
-     <Modal.Section>
+        <Modal.Section>
           <Text as="p">
             {
               `Are you sure you want to export ${resource}'s ${includeTags &&
