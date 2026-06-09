@@ -154,6 +154,17 @@ const TagMetafieldManagerDocumentation: React.FC = () => {
                                 <strong style={styles.strongLabel}>Developed By:</strong> Galaxy WebLinks
                             </p>
                             <p style={styles.contactItem}>
+                                <strong style={styles.strongLabel}>Email:</strong>{" "}
+                                <a
+                                    href="appsupport@galaxyweblinks.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={styles.link}
+                                >
+                                   appsupport@galaxyweblinks.com
+                                </a>
+                            </p>
+                            <p style={styles.contactItem}>
                                 <strong style={styles.strongLabel}>Support Website:</strong>{" "}
                                 <a
                                     href="https://www.galaxyweblinks.com"
